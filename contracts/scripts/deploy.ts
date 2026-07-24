@@ -46,7 +46,25 @@ async function main() {
     JSON.stringify(addresses, null, 2)
   );
 
-  console.log("Contract addresses saved to backend/contract-addresses.json");
+  const frontendDir = path.join(__dirname, "../../frontend/src/abi");
+  if (!fs.existsSync(frontendDir)){
+      fs.mkdirSync(frontendDir, { recursive: true });
+  }
+  fs.writeFileSync(
+    path.join(__dirname, "../../frontend/src/abi/contract-addresses.json"),
+    JSON.stringify(addresses, null, 2)
+  );
+
+  // Copy ABIs to frontend
+  const tokenAbi = JSON.parse(fs.readFileSync(path.join(__dirname, "../artifacts/contracts/EnergyToken.sol/EnergyToken.json"), "utf-8"));
+  const certAbi = JSON.parse(fs.readFileSync(path.join(__dirname, "../artifacts/contracts/EnergyCertificate.sol/EnergyCertificate.json"), "utf-8"));
+  const marketplaceAbi = JSON.parse(fs.readFileSync(path.join(__dirname, "../artifacts/contracts/EnergyMarketplace.sol/EnergyMarketplace.json"), "utf-8"));
+  
+  fs.writeFileSync(path.join(__dirname, "../../frontend/src/abi/EnergyToken.json"), JSON.stringify(tokenAbi.abi, null, 2));
+  fs.writeFileSync(path.join(__dirname, "../../frontend/src/abi/EnergyCertificate.json"), JSON.stringify(certAbi.abi, null, 2));
+  fs.writeFileSync(path.join(__dirname, "../../frontend/src/abi/EnergyMarketplace.json"), JSON.stringify(marketplaceAbi.abi, null, 2));
+
+  console.log("Contract addresses and ABIs saved to frontend/src/abi and backend/");
 }
 
 main().catch((error) => {

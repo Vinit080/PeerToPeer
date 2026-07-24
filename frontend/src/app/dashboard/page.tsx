@@ -9,25 +9,61 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BatteryCharging, Zap, DollarSign, Activity } from 'lucide-react';
 import { useWeb3 } from '@/context/Web3Context';
+import { ethers } from 'ethers';
+// We'll import these after deployment generates them
+import EnergyMarketplaceABI from '../abi/EnergyMarketplace.json';
+import ContractAddresses from '../abi/contract-addresses.json';
 
 export default function ProducerDashboard() {
-  const { address, connectWallet, isConnecting } = useWeb3();
+  const { address, signer, connectWallet, isConnecting } = useWeb3();
   const [isDeploying, setIsDeploying] = React.useState(false);
+  const [listAmount, setListAmount] = React.useState('');
+  const [listPrice, setListPrice] = React.useState('');
 
   const handleDeploy = async () => {
-    if (!address) {
+    if (!address || !signer) {
       await connectWallet();
       return;
     }
     
+    if (!listAmount || !listPrice) {
+      alert("Please enter amount and price.");
+      return;
+    }
+
     try {
       setIsDeploying(true);
-      // Mock delay for blockchain transaction
-      await new Promise(r => setTimeout(r, 2000));
-      alert('Energy listed successfully on the smart contract!');
-    } catch (e) {
+      
+      const marketplace = new ethers.Contract(
+        ContractAddresses.EnergyMarketplace,
+        EnergyMarketplaceABI,
+        signer
+      );
+
+      // Call smart contract (amount, price)
+      const tx = await marketplace.listEnergy(
+        ethers.parseUnits(listAmount, 18), 
+        ethers.parseEther(listPrice)
+      );
+      
+      await tx.wait(); // Wait for confirmation
+      
+      // Sync with backend API
+      await fetch(process.env.NEXT_PUBLIC_API_URL + '/marketplace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          energySource: 'Solar Array (Dashboard)',
+          capacity: parseFloat(listAmount),
+          pricePerUnit: parseFloat(listPrice),
+          txHash: tx.hash
+        })
+      });
+
+      alert('Energy listed successfully on the blockchain!');
+    } catch (e: any) {
       console.error(e);
-      alert('Transaction failed');
+      alert('Transaction failed: ' + (e.message || e));
     } finally {
       setIsDeploying(false);
     }
@@ -145,11 +181,26 @@ export default function ProducerDashboard() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="amount" className="text-gray-300">Amount (kWh)</Label>
-                  <Input id="amount" type="number" placeholder="1000" className="bg-black/50 border-white/10 text-white" />
+                  <Input 
+                    id="amount" 
+                    type="number" 
+                    placeholder="1000" 
+                    value={listAmount}
+                    onChange={(e) => setListAmount(e.target.value)}
+                    className="bg-black/50 border-white/10 text-white" 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="price" className="text-gray-300">Price per unit (ETH)</Label>
-                  <Input id="price" type="number" step="0.0001" placeholder="0.001" className="bg-black/50 border-white/10 text-white" />
+                  <Input 
+                    id="price" 
+                    type="number" 
+                    step="0.0001" 
+                    placeholder="0.001" 
+                    value={listPrice}
+                    onChange={(e) => setListPrice(e.target.value)}
+                    className="bg-black/50 border-white/10 text-white" 
+                  />
                 </div>
                 <button 
                   type="button" 

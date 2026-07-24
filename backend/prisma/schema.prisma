@@ -1,0 +1,70 @@
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  PRODUCER
+  CONSUMER
+  ADMIN
+  GRID_OPERATOR
+  AUDITOR
+}
+
+model User {
+  id                String         @id @default(uuid())
+  email             String?        @unique
+  walletAddress     String         @unique
+  name              String?
+  role              Role           @default(CONSUMER)
+  nonce             String         // Used for wallet authentication
+  energyListings    Listing[]      @relation("SellerListings")
+  purchases         Transaction[]  @relation("BuyerTransactions")
+  sales             Transaction[]  @relation("SellerTransactions")
+  notifications     Notification[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+model Listing {
+  id                String        @id @default(uuid())
+  blockchainId      Int?          @unique // Maps to listingId in Smart Contract
+  sellerId          String
+  seller            User          @relation("SellerListings", fields: [sellerId], references: [id])
+  energySource      String        // e.g. "Solar Panel", "Wind Turbine"
+  location          String
+  capacity          Float         // Total capacity generated (kWh)
+  availableAmount   Float         // Remaining available for sale
+  pricePerUnit      Float         // Price per kWh (in ETH/Tokens)
+  isActive          Boolean       @default(true)
+  transactions      Transaction[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model Transaction {
+  id                String    @id @default(uuid())
+  listingId         String
+  listing           Listing   @relation(fields: [listingId], references: [id])
+  buyerId           String
+  buyer             User      @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  sellerId          String
+  seller            User      @relation("SellerTransactions", fields: [sellerId], references: [id])
+  amount            Float     // Energy amount bought (kWh)
+  totalCost         Float     // Total paid (in ETH)
+  txHash            String    @unique // Blockchain transaction hash
+  createdAt         DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

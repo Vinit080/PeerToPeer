@@ -8,8 +8,31 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BatteryCharging, Zap, DollarSign, Activity } from 'lucide-react';
+import { useWeb3 } from '@/context/Web3Context';
 
 export default function ProducerDashboard() {
+  const { address, connectWallet, isConnecting } = useWeb3();
+  const [isDeploying, setIsDeploying] = React.useState(false);
+
+  const handleDeploy = async () => {
+    if (!address) {
+      await connectWallet();
+      return;
+    }
+    
+    try {
+      setIsDeploying(true);
+      // Mock delay for blockchain transaction
+      await new Promise(r => setTimeout(r, 2000));
+      alert('Energy listed successfully on the smart contract!');
+    } catch (e) {
+      console.error(e);
+      alert('Transaction failed');
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-blue-500/30">
       <Navbar />
@@ -128,8 +151,13 @@ export default function ProducerDashboard() {
                   <Label htmlFor="price" className="text-gray-300">Price per unit (ETH)</Label>
                   <Input id="price" type="number" step="0.0001" placeholder="0.001" className="bg-black/50 border-white/10 text-white" />
                 </div>
-                <button type="button" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-all shadow-lg shadow-blue-500/20">
-                  Deploy to Blockchain
+                <button 
+                  type="button" 
+                  onClick={handleDeploy}
+                  disabled={isDeploying || isConnecting}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-all shadow-lg shadow-blue-500/20 disabled:bg-blue-600/50"
+                >
+                  {isDeploying ? 'Deploying...' : (address ? 'Deploy to Blockchain' : 'Connect Wallet to Deploy')}
                 </button>
               </form>
             </CardContent>

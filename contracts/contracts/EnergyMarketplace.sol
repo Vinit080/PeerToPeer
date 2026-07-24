@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./EnergyToken.sol";
 
@@ -10,7 +11,7 @@ import "./EnergyToken.sol";
  * @title EnergyMarketplace
  * @dev Manages listing, purchasing, and settlement of energy trades.
  */
-contract EnergyMarketplace is Ownable, ReentrancyGuard {
+contract EnergyMarketplace is Ownable, ReentrancyGuard, Pausable {
     EnergyToken public energyToken;
 
     struct Listing {
@@ -32,10 +33,18 @@ contract EnergyMarketplace is Ownable, ReentrancyGuard {
         energyToken = EnergyToken(_energyTokenAddress);
     }
 
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     /**
      * @dev List energy for sale. Requires seller to have approved the marketplace contract to spend their tokens.
      */
-    function listEnergy(uint256 amount, uint256 pricePerUnit) external nonReentrant returns (uint256) {
+    function listEnergy(uint256 amount, uint256 pricePerUnit) external whenNotPaused nonReentrant returns (uint256) {
         require(amount > 0, "Amount must be greater than zero");
         require(pricePerUnit > 0, "Price must be greater than zero");
         
@@ -59,7 +68,7 @@ contract EnergyMarketplace is Ownable, ReentrancyGuard {
     /**
      * @dev Buy energy from a listing. Buyer sends ETH.
      */
-    function buyEnergy(uint256 listingId, uint256 amount) external payable nonReentrant {
+    function buyEnergy(uint256 listingId, uint256 amount) external payable whenNotPaused nonReentrant {
         Listing storage listing = listings[listingId];
         require(listing.isActive, "Listing is not active");
         require(listing.amount >= amount, "Not enough energy in listing");
@@ -92,7 +101,7 @@ contract EnergyMarketplace is Ownable, ReentrancyGuard {
     /**
      * @dev Cancel a listing and refund unsold tokens back to the seller.
      */
-    function cancelListing(uint256 listingId) external nonReentrant {
+    function cancelListing(uint256 listingId) external whenNotPaused nonReentrant {
         Listing storage listing = listings[listingId];
         require(listing.seller == msg.sender || msg.sender == owner(), "Not authorized");
         require(listing.isActive, "Listing is already inactive");

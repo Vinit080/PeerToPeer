@@ -11,8 +11,8 @@ import { BatteryCharging, Zap, DollarSign, Activity } from 'lucide-react';
 import { useWeb3 } from '@/context/Web3Context';
 import { ethers } from 'ethers';
 // We'll import these after deployment generates them
-import EnergyMarketplaceABI from '../abi/EnergyMarketplace.json';
-import ContractAddresses from '../abi/contract-addresses.json';
+import EnergyMarketplaceABI from '../../abi/EnergyMarketplace.json';
+import ContractAddresses from '../../abi/contract-addresses.json';
 
 export default function ProducerDashboard() {
   const { address, signer, connectWallet, isConnecting } = useWeb3();
@@ -48,18 +48,6 @@ export default function ProducerDashboard() {
       
       await tx.wait(); // Wait for confirmation
       
-      // Sync with backend API
-      await fetch(process.env.NEXT_PUBLIC_API_URL + '/marketplace', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          energySource: 'Solar Array (Dashboard)',
-          capacity: parseFloat(listAmount),
-          pricePerUnit: parseFloat(listPrice),
-          txHash: tx.hash
-        })
-      });
-
       alert('Energy listed successfully on the blockchain!');
     } catch (e: any) {
       console.error(e);

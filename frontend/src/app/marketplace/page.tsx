@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Search, MapPin, Zap, ShieldCheck } from 'lucide-react';
 import { useWeb3 } from '@/context/Web3Context';
 import { ethers } from 'ethers';
-import EnergyMarketplaceABI from '../abi/EnergyMarketplace.json';
-import ContractAddresses from '../abi/contract-addresses.json';
+import EnergyMarketplaceABI from '../../abi/EnergyMarketplace.json';
+import ContractAddresses from '../../abi/contract-addresses.json';
 
 interface Listing {
   id: string;
@@ -56,18 +56,7 @@ export default function Marketplace() {
 
       await tx.wait();
 
-      await fetch(process.env.NEXT_PUBLIC_API_URL + '/marketplace/purchase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          listingId: listing.id,
-          amount: 1,
-          totalCost: listing.pricePerUnit,
-          txHash: tx.hash
-        })
-      });
-
-      alert("Purchase successful!");
+      alert("Purchase successful! It will be synced shortly.");
       // Remove from UI
       setListings(listings.filter(l => l.id !== listing.id));
     } catch (e: any) {
